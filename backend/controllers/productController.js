@@ -76,7 +76,7 @@ const getProducts = (req, res) => {
     const query = `
     SELECT *
     FROM products
-
+    
   `;
 
   db.query(query, (err, result) => {
@@ -266,5 +266,5 @@ module.exports = {
   updateProduct,
   getShopProducts,
   getNewArrivalProducts,
-  getPremiumProducts
+  getPremiumProducts 
 };

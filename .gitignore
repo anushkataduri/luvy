@@ -1,18 +1,9 @@
-# Dependencies
-**/node_modules/
-
-# Local configuration and secrets
-**/.env
-**/.env.*
-!**/.env.example
-
-# Build output
-**/dist/
-**/dist-ssr/
-
-# Logs and local tooling
-*.log
-.DS_Store
-.idea/
-.vscode/*
-!.vscode/extensions.json
+node_modules/
+.env
+.env.*
+!.env.example
+dist/
+build/
+coverage/
+backend/uploads/*
+!backend/uploads/.gitkeep

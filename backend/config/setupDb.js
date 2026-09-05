@@ -45,7 +45,7 @@ function setupDatabase() {
           console.error('Error creating notifications table:', err);
           return reject(err);
         }
-
+        
         // Ensure user_id column exists in notifications table
         const checkUserColumnQuery = "SHOW COLUMNS FROM notifications LIKE 'user_id'";
         db.query(checkUserColumnQuery, (colErr, colResults) => {

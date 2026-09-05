@@ -184,10 +184,10 @@ const updateProfile = (req, res) => {
       return res.status(400).json({ message: 'Email is already in use by another account' });
     }
 
-    const updateQuery = profilePhoto
+    const updateQuery = profilePhoto 
       ? 'UPDATE users SET fullname = ?, email = ?, profile_photo = ? WHERE id = ?'
       : 'UPDATE users SET fullname = ?, email = ? WHERE id = ?';
-
+      
     const queryParams = profilePhoto
       ? [fullname, email, profilePhoto, userId]
       : [fullname, email, userId];

@@ -1,0 +1,134 @@
+/* Modern LUVY Product Card */
+.product-card {
+  background: #ffffff;
+  border-radius: 20px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 14px 30px rgba(10, 49, 77, 0.1);
+  border-color: rgba(0, 180, 216, 0.4);
+}
+
+/* Active Highlight when selected */
+.product-card.active-selected {
+  border: 2px solid #00b4d8;
+  box-shadow: 0 12px 30px rgba(0, 180, 216, 0.25);
+  transform: translateY(-4px);
+}
+
+.product-card-inner-flex {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.product-card-primary {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+.product-card-primary .product-img-wrapper {
+  position: relative;
+  overflow: hidden;
+  height: 270px;
+  background: #f8fafc;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+}
+
+.product-card-primary .product-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.product-card:hover .product-img {
+  transform: scale(1.06);
+}
+
+.product-card-primary .product-info {
+  padding: 1.25rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.product-card-category-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #0077b6;
+  margin-bottom: 0.35rem;
+}
+
+.product-card-primary .product-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 0.4rem 0;
+  line-height: 1.35;
+  font-family: var(--font-serif, 'Playfair Display', serif);
+}
+
+.product-card-primary .product-price {
+  font-weight: 700;
+  color: #0077b6;
+  font-size: 1.15rem;
+  margin-bottom: 0.85rem;
+}
+
+.product-card-learn-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #0077b6;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: gap 0.2s ease, color 0.2s ease;
+}
+
+.product-card-learn-more:hover {
+  gap: 9px;
+  color: #028090;
+}
+
+/* Add Button with Image 2 Gradient */
+.product-card-add-btn {
+  padding: 0.45rem 1.15rem;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #0a314d 0%, #0077b6 50%, #028090 100%);
+  color: #ffffff;
+  border: none;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(2, 128, 144, 0.25);
+  transition: all 0.2s ease;
+}
+
+.product-card-add-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(2, 128, 144, 0.4);
+  background: linear-gradient(135deg, #061e30 0%, #005f94 50%, #016b78 100%);
+}
