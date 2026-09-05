@@ -30,45 +30,32 @@ export default function Products({ productsData, onAddProduct, onDeleteProduct, 
     category: 'Rings',
     price: '',
     stock: '',
-    image: null,
-    images: [],
+    existingImages: [],
+    newImageFiles: [],
     product_type: 'shop',
     status: 'Active',
   });
 
-  // const filteredProducts = productsData.filter(p => {
-  //   const matchesSearch = p.product_name.toLowerCase().includes(searchTerm.toLowerCase());
-  //   const matchesCategory = categoryFilter === 'All' || p.category === categoryFilter;
-  //   return matchesSearch && matchesCategory;
-  // });
-
-
-
-
-
-
   const filteredProducts = productsData.filter((p) => {
-  const matchesSearch =
-    p.product_name
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
+    const matchesSearch =
+      p.product_name
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
 
-  const matchesCategory =
-    categoryFilter === 'All' ||
-    p.category === categoryFilter;
+    const matchesCategory =
+      categoryFilter === 'All' ||
+      p.category === categoryFilter;
 
-  const matchesType =
-    productType === 'all' ||
-    p.product_type === productType;
+    const matchesType =
+      productType === 'all' ||
+      p.product_type === productType;
 
-  return (
-    matchesSearch &&
-    matchesCategory &&
-    matchesType
-  );
-});
-
-
+    return (
+      matchesSearch &&
+      matchesCategory &&
+      matchesType
+    );
+  });
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -78,9 +65,47 @@ export default function Products({ productsData, onAddProduct, onDeleteProduct, 
     }));
   };
 
+  const handleFileSelect = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const selectedFiles = Array.from(e.target.files);
+      setNewProduct(prev => ({
+        ...prev,
+        newImageFiles: [...prev.newImageFiles, ...selectedFiles]
+      }));
+    }
+    e.target.value = ''; // Reset input to allow selecting additional images immediately
+  };
 
- 
-console.log("Product Type:", productType);
+  const handleRemoveExistingImage = (idxToRemove) => {
+    setNewProduct(prev => ({
+      ...prev,
+      existingImages: prev.existingImages.filter((_, idx) => idx !== idxToRemove)
+    }));
+  };
+
+  const handleRemoveNewFile = (idxToRemove) => {
+    setNewProduct(prev => ({
+      ...prev,
+      newImageFiles: prev.newImageFiles.filter((_, idx) => idx !== idxToRemove)
+    }));
+  };
+
+  const resetForm = () => {
+    setNewProduct({
+      product_name: '',
+      description: '',
+      category: 'Rings',
+      price: '',
+      stock: '',
+      existingImages: [],
+      newImageFiles: [],
+      product_type: 'shop',
+      status: 'Active',
+    });
+    setEditingProduct(null);
+    setIsModalOpen(false);
+  };
+
   const handleAddSubmit = async (e) => {
     e.preventDefault();
 
@@ -91,54 +116,31 @@ console.log("Product Type:", productType);
         !newProduct.price ||
         !newProduct.stock
       ) {
-        alert('Please fill all fields');
+        alert('Please fill all required fields');
+        return;
+      }
+
+      const totalImagesCount = newProduct.existingImages.length + newProduct.newImageFiles.length;
+      if (totalImagesCount === 0) {
+        alert('Please select at least 1 image for the product.');
         return;
       }
 
       const formData = new FormData();
+      formData.append('product_name', newProduct.product_name);
+      formData.append('description', newProduct.description);
+      formData.append('category', newProduct.category);
+      formData.append('price', newProduct.price);
+      formData.append('stock', newProduct.stock);
+      formData.append('product_type', newProduct.product_type || 'shop');
+      formData.append('existing_images', JSON.stringify(newProduct.existingImages));
 
-      formData.append(
-        'product_name',
-        newProduct.product_name
-      );
-
-      formData.append(
-        'description',
-        newProduct.description
-      );
-
-      formData.append(
-        'category',
-        newProduct.category
-      );
-
-      formData.append(
-        'price',
-        newProduct.price
-      );
-
-      formData.append(
-        'stock',
-        newProduct.stock
-      );
-
-      if (newProduct.images && newProduct.images.length > 0) {
-        Array.from(newProduct.images).forEach((imgFile) => {
-          formData.append('images', imgFile);
-        });
-      } else if (newProduct.image) {
-        formData.append('images', newProduct.image);
-      }
-
-      formData.append(
-        'product_type',
-        newProduct.product_type || 'shop'
-      );
-
-      let response;
+      newProduct.newImageFiles.forEach((imgFile) => {
+        formData.append('images', imgFile);
+      });
 
       if (editingProduct) {
-        response = await axios.put(
+        await axios.put(
           `http://localhost:5000/api/products/${editingProduct.id}`,
           formData,
           {
@@ -147,10 +149,9 @@ console.log("Product Type:", productType);
             },
           }
         );
-
         alert('Product updated successfully');
       } else {
-        response = await axios.post(
+        await axios.post(
           'http://localhost:5000/api/products/add',
           formData,
           {
@@ -159,31 +160,17 @@ console.log("Product Type:", productType);
             },
           }
         );
-
         alert('Product added successfully');
       }
 
-      setNewProduct({
-        product_name: '',
-        description: '',
-        category: 'Rings',
-        price: '',
-        stock: '',
-        image: null,
-        images: [],
-        product_type: 'shop',
-        status: 'Active',
-      });
-
-      setEditingProduct(null);
-      setIsModalOpen(false);
+      resetForm();
 
       if (onAddProduct) {
         onAddProduct();
       }
 
     } catch (error) {
-      console.log(error);
+      console.error(error);
       alert(
         error.response?.data?.message ||
         'Failed to save product'
@@ -198,6 +185,10 @@ console.log("Product Type:", productType);
   };
 
   const handleEditProduct = (product) => {
+    const existingImgs = typeof product.image === 'string' && product.image.startsWith('[')
+      ? JSON.parse(product.image)
+      : (product.image ? [product.image] : []);
+
     setEditingProduct(product);
     setNewProduct({
       product_name: product.product_name,
@@ -205,8 +196,8 @@ console.log("Product Type:", productType);
       category: product.category,
       price: product.price,
       stock: product.stock,
-      image: null,
-      images: [],
+      existingImages: existingImgs,
+      newImageFiles: [],
       product_type: product.product_type || 'shop',
       status: product.status
     });
@@ -242,20 +233,9 @@ console.log("Product Type:", productType);
           <button className="admin-btn admin-btn-primary" 
             onClick={() => {
               if (isModalOpen && !editingProduct) {
-                setIsModalOpen(false);
+                resetForm();
               } else {
-                setEditingProduct(null);
-                setNewProduct({
-                  product_name: '',
-                  description: '',
-                  category: 'Rings',
-                  price: '',
-                  stock: '',
-                  image: null,
-                  images: [],
-                  product_type: 'shop',
-                  status: 'Active',
-                });
+                resetForm();
                 setIsModalOpen(true);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }
@@ -275,21 +255,7 @@ console.log("Product Type:", productType);
             </h3>
             <button 
               type="button" 
-              onClick={() => {
-                setIsModalOpen(false);
-                setEditingProduct(null);
-                setNewProduct({
-                  product_name: '',
-                  description: '',
-                  category: 'Rings',
-                  price: '',
-                  stock: '',
-                  image: null,
-                  images: [],
-                  product_type: 'shop',
-                  status: 'Active',
-                });
-              }}
+              onClick={resetForm}
               style={{ cursor: 'pointer', border: 'none', background: 'none', color: 'var(--admin-text-secondary)' }}
             >
               <X size={20} />
@@ -395,63 +361,158 @@ console.log("Product Type:", productType);
                     className="admin-form-input"
                     rows="3"
                     placeholder="Enter product description"
-                    style={{ resize: 'none', flex: 1, minHeight: '80px' }}
+                    style={{ resize: 'none', flex: 1, minHeight: '70px' }}
                     required
                   />
                 </div>
 
-                {/* Product Images */}
+                {/* Product Images Manager */}
                 <div className="admin-form-group" style={{ marginBottom: 0 }}>
-                  <label className="admin-form-label">Product Image(s) (Select 1 or multiple)</label>
-                  <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                    <div style={{ flex: 1 }}>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={(e) =>
-                          setNewProduct({
-                            ...newProduct,
-                            images: Array.from(e.target.files),
-                            image: e.target.files[0]
-                          })
-                        }
-                        className="admin-form-input"
-                        required={!editingProduct}
-                      />
-                    </div>
-                    {((newProduct.images && newProduct.images.length > 0) || (editingProduct && editingProduct.image)) && (
-                      <div style={{ flexShrink: 0, display: 'flex', gap: '4px' }}>
-                        {newProduct.images && newProduct.images.length > 0 ? (
-                          newProduct.images.map((img, idx) => (
-                            <img
-                              key={idx}
-                              src={URL.createObjectURL(img)}
-                              alt="Preview"
-                              style={{
-                                width: '42px',
-                                height: '42px',
-                                objectFit: 'cover',
-                                borderRadius: '8px',
-                                border: '1px solid var(--admin-border-color)',
-                              }}
-                            />
-                          ))
-                        ) : (
-                          <img
-                            src={getImageUrl(getFirstProductImage(editingProduct.image))}
-                            alt="Preview"
-                            style={{
-                              width: '42px',
-                              height: '42px',
-                              objectFit: 'cover',
-                              borderRadius: '8px',
-                              border: '1px solid var(--admin-border-color)',
-                            }}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <label className="admin-form-label" style={{ margin: 0 }}>
+                      Product Images ({newProduct.existingImages.length + newProduct.newImageFiles.length} selected)
+                    </label>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-secondary)' }}>
+                      Recommended: 4 to 5 images
+                    </span>
+                  </div>
+
+                  {/* Multi-image Selection and Discard Gallery */}
+                  <div style={{ border: '1px dashed var(--admin-border-color)', borderRadius: '10px', padding: '12px', background: 'var(--admin-bg)' }}>
+                    
+                    {/* Image Thumbnails with (X) discard button */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '12px' }}>
+                      {/* 1. Existing Saved Images */}
+                      {newProduct.existingImages.map((imgName, idx) => (
+                        <div 
+                          key={`existing-${idx}`} 
+                          style={{ 
+                            position: 'relative', 
+                            width: '64px', 
+                            height: '64px', 
+                            borderRadius: '8px', 
+                            overflow: 'hidden', 
+                            border: '2px solid var(--admin-accent-purple)', 
+                            boxShadow: '0 2px 5px rgba(0,0,0,0.1)' 
+                          }}
+                        >
+                          <img 
+                            src={getImageUrl(imgName)} 
+                            alt={`Existing ${idx + 1}`} 
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                           />
-                        )}
-                      </div>
-                    )}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveExistingImage(idx)}
+                            title="Discard image"
+                            style={{
+                              position: 'absolute',
+                              top: '2px',
+                              right: '2px',
+                              background: '#ef4444',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: '50%',
+                              width: '20px',
+                              height: '20px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.4)',
+                              padding: 0
+                            }}
+                          >
+                            <X size={12} />
+                          </button>
+                          <span style={{ position: 'absolute', bottom: '0', left: '0', right: '0', background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '8px', textAlign: 'center', padding: '1px 0' }}>
+                            Saved
+                          </span>
+                        </div>
+                      ))}
+
+                      {/* 2. Newly Uploaded Files */}
+                      {newProduct.newImageFiles.map((file, idx) => (
+                        <div 
+                          key={`new-${idx}`} 
+                          style={{ 
+                            position: 'relative', 
+                            width: '64px', 
+                            height: '64px', 
+                            borderRadius: '8px', 
+                            overflow: 'hidden', 
+                            border: '2px solid var(--admin-success)', 
+                            boxShadow: '0 2px 5px rgba(0,0,0,0.1)' 
+                          }}
+                        >
+                          <img 
+                            src={URL.createObjectURL(file)} 
+                            alt={`New ${idx + 1}`} 
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveNewFile(idx)}
+                            title="Discard image"
+                            style={{
+                              position: 'absolute',
+                              top: '2px',
+                              right: '2px',
+                              background: '#ef4444',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: '50%',
+                              width: '20px',
+                              height: '20px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.4)',
+                              padding: 0
+                            }}
+                          >
+                            <X size={12} />
+                          </button>
+                          <span style={{ position: 'absolute', bottom: '0', left: '0', right: '0', background: '#10b981', color: '#fff', fontSize: '8px', textAlign: 'center', padding: '1px 0' }}>
+                            New
+                          </span>
+                        </div>
+                      ))}
+
+                      {/* Add Image Picker Trigger */}
+                      <label 
+                        style={{ 
+                          width: '64px', 
+                          height: '64px', 
+                          borderRadius: '8px', 
+                          border: '2px dashed var(--admin-accent-purple)', 
+                          display: 'flex', 
+                          flexDirection: 'column', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          cursor: 'pointer', 
+                          background: 'rgba(124, 58, 237, 0.05)',
+                          color: 'var(--admin-accent-purple)',
+                          gap: '2px'
+                        }}
+                      >
+                        <Plus size={18} />
+                        <span style={{ fontSize: '9px', fontWeight: '600' }}>Add</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleFileSelect}
+                          style={{ display: 'none' }}
+                        />
+                      </label>
+                    </div>
+
+                    <div style={{ fontSize: '0.75rem', color: 'var(--admin-text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Upload size={14} />
+                      <span>Click <strong>Add</strong> or choose multiple files. Click <strong>✕</strong> on any thumbnail to discard it.</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -462,21 +523,7 @@ console.log("Product Type:", productType);
               <button
                 type="button"
                 className="admin-btn admin-btn-secondary"
-                onClick={() => {
-                  setIsModalOpen(false);
-                  setEditingProduct(null);
-                  setNewProduct({
-                    product_name: '',
-                    description: '',
-                    category: 'Rings',
-                    price: '',
-                    stock: '',
-                    image: null,
-                    images: [],
-                    product_type: 'shop',
-                    status: 'Active',
-                  });
-                }}
+                onClick={resetForm}
               >
                 Cancel
               </button>

@@ -29,6 +29,8 @@ const signupUser = async (req, res) => {
       });
     }
 
+    const cleanEmail = email.trim().toLowerCase();
+
     // Password match check
     if (password !== confirmPassword) {
       return res.status(400).json({
@@ -36,10 +38,10 @@ const signupUser = async (req, res) => {
       });
     }
 
-    // Check existing user
-    const checkQuery = 'SELECT * FROM users WHERE email = ?';
+    // Check existing user (case-insensitive)
+    const checkQuery = 'SELECT * FROM users WHERE LOWER(TRIM(email)) = LOWER(TRIM(?))';
 
-    db.query(checkQuery, [email], async (err, result) => {
+    db.query(checkQuery, [cleanEmail], async (err, result) => {
       if (err) {
         return res.status(500).json(err);
       }
@@ -56,13 +58,13 @@ const signupUser = async (req, res) => {
 
       // Insert user
       const insertQuery = `
-        INSERT INTO users (fullname, phone, email, password)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO users (fullname, phone, email, password, role)
+        VALUES (?, ?, ?, ?, 'user')
       `;
 
       db.query(
         insertQuery,
-        [fullname, phone, email, hashedPassword],
+        [fullname.trim(), phone.trim(), cleanEmail, hashedPassword],
         (err, result) => {
           if (err) {
             return res.status(500).json(err);
@@ -90,10 +92,12 @@ const loginUser = (req, res) => {
       });
     }
 
-    // Check user exists
-    const query = 'SELECT * FROM users WHERE email = ?';
+    const cleanEmail = email.trim().toLowerCase();
 
-    db.query(query, [email], async (err, result) => {
+    // Check user exists (case-insensitive)
+    const query = 'SELECT * FROM users WHERE LOWER(TRIM(email)) = LOWER(TRIM(?))';
+
+    db.query(query, [cleanEmail], async (err, result) => {
       if (err) {
         return res.status(500).json(err);
       }
@@ -126,7 +130,7 @@ const loginUser = (req, res) => {
           email: user.email,
           role: user.role,
         },
-        process.env.JWT_SECRET,
+        process.env.JWT_SECRET || 'luvy_secret_key',
         {
           expiresIn: '7d',
         }

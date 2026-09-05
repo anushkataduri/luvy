@@ -102,8 +102,8 @@ export default function AdminOrderDetails({ orderId }) {
               <h3 style={{ margin: 0, fontFamily: 'var(--admin-font-serif)', fontSize: '1.2rem', color: 'var(--admin-text-primary)' }}>
                 Order Summary
               </h3>
-              <span style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--admin-text-secondary)' }}>
-                ID: <span style={{ color: 'var(--admin-accent-purple)' }}>#{orderInfo.order_id}</span>
+              <span style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--admin-accent-purple)' }}>
+                {orderInfo.luvy_order_id || `#${orderInfo.order_id}`}
               </span>
             </div>
 

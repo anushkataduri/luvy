@@ -84,7 +84,7 @@
   color: #0f172a;
   margin: 0 0 0.4rem 0;
   line-height: 1.35;
-  font-family: var(--font-serif, 'Playfair Display', serif);
+  font-family: 'Inter', 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .product-card-primary .product-price {

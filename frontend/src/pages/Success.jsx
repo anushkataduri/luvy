@@ -1,27 +1,31 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { CheckCircle, Package, ArrowRight, ShoppingBag } from 'lucide-react';
 
 const Success = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { orderId, luvyOrderId } = location.state || {};
 
   return (
     <div
       style={{
-        minHeight: '70vh',
+        minHeight: '75vh',
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        padding: '40px',
+        padding: '40px 20px',
       }}
     >
       <div
         style={{
           background: '#fff',
-          padding: '40px',
+          padding: '40px 30px',
           borderRadius: '20px',
-          boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+          boxShadow: '0 10px 40px rgba(0,0,0,0.06)',
+          border: '1px solid var(--border-color)',
           textAlign: 'center',
-          maxWidth: '500px',
+          maxWidth: '520px',
           width: '100%',
         }}
       >
@@ -30,22 +34,23 @@ const Success = () => {
             width: '80px',
             height: '80px',
             borderRadius: '50%',
-            background: '#e8fff0',
+            background: 'rgba(34, 197, 94, 0.1)',
             margin: '0 auto 20px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '40px',
-            color: 'green',
+            color: '#16a34a',
           }}
         >
-          ✓
+          <CheckCircle size={44} />
         </div>
 
         <h1
           style={{
-            color: '#0A2342',
-            marginBottom: '15px',
+            color: 'var(--primary-navy)',
+            marginBottom: '10px',
+            fontFamily: 'var(--font-serif)',
+            fontSize: '1.85rem'
           }}
         >
           Order Confirmed!
@@ -53,40 +58,77 @@ const Success = () => {
 
         <p
           style={{
-            color: '#666',
-            marginBottom: '25px',
+            color: '#64748b',
+            marginBottom: '20px',
+            fontSize: '0.95rem',
+            lineHeight: '1.5'
           }}
         >
-          Thank you for shopping with LUVY.
-          Your order has been placed successfully.
+          Thank you for choosing LUVY Fine Jewellery. We have received your order and our master craftsmen are preparing it.
         </p>
 
-        <div
-          style={{
-            background: '#f8f8f8',
-            padding: '15px',
-            borderRadius: '10px',
-            marginBottom: '25px',
-          }}
-        >
-          <p><strong>Payment:</strong> COD</p>
-          <p><strong>Status:</strong> Pending</p>
-        </div>
+        {luvyOrderId && (
+          <div
+            style={{
+              background: '#f8fafc',
+              padding: '16px',
+              borderRadius: '12px',
+              marginBottom: '25px',
+              border: '1px solid #e2e8f0',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '4px'
+            }}
+          >
+            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b', fontWeight: '600' }}>
+              Tracking Identifier
+            </span>
+            <strong style={{ fontSize: '1.2rem', color: 'var(--primary-navy)', letterSpacing: '0.5px' }}>
+              {luvyOrderId}
+            </strong>
+          </div>
+        )}
 
-        <button
-          onClick={() => navigate('/shop')}
-          style={{
-            background: '#6C3BFF',
-            color: '#fff',
-            border: 'none',
-            padding: '12px 25px',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontSize: '16px',
-          }}
-        >
-          Continue Shopping
-        </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {orderId && (
+            <button
+              onClick={() => navigate(`/order/${orderId}`)}
+              className="btn btn-primary"
+              style={{
+                width: '100%',
+                padding: '14px',
+                borderRadius: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                fontWeight: '700'
+              }}
+            >
+              <Package size={18} /> Track Your Order Details
+            </button>
+          )}
+
+          <button
+            onClick={() => navigate('/shop')}
+            style={{
+              background: 'transparent',
+              color: 'var(--primary-navy)',
+              border: '1px solid var(--border-color)',
+              padding: '12px',
+              borderRadius: '10px',
+              cursor: 'pointer',
+              fontSize: '0.95rem',
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
+            }}
+          >
+            <ShoppingBag size={18} /> Continue Shopping
+          </button>
+        </div>
       </div>
     </div>
   );

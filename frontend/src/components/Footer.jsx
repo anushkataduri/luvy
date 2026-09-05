@@ -71,9 +71,9 @@ const Footer = () => {
           <div className="footer-section">
             <h3 className="footer-title">Contact Us</h3>
             <ul className="footer-contact">
-              <li><Mail size={18} /> support@aurafashion.com</li>
-              <li><Phone size={18} /> +1 (555) 123-4567</li>
-              <li><MapPin size={18} /> 123 Fashion Avenue, NY 10001</li>
+              <li><Mail size={18} /> support@luxejewels.com</li>
+              <li><Phone size={18} /> +91 98765 43210</li>
+              <li><MapPin size={18} /> 123, Luxury Avenue, Hyderabad, Telangana</li>
             </ul>
           </div>
         </div>

@@ -34,14 +34,14 @@ export const getImageUrl = (imageName) => {
     return imageName;
   }
   if (imageName.startsWith('/uploads/')) {
-    return `http://localhost:5000${imageName}`;
+    return `http://localhost:5000${encodeURI(imageName)}`;
   }
   if (imageName.startsWith('uploads/')) {
-    return `http://localhost:5000/${imageName}`;
+    return `http://localhost:5000/${encodeURI(imageName)}`;
   }
   // If it is a relative frontend asset
   if (imageName.startsWith('/assets/') || imageName.startsWith('assets/')) {
     return imageName.startsWith('/') ? imageName : `/${imageName}`;
   }
-  return `http://localhost:5000/uploads/${encodeURIComponent(imageName)}`;
+  return `http://localhost:5000/uploads/${encodeURI(imageName)}`;
 };

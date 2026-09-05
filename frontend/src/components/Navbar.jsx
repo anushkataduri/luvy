@@ -275,15 +275,31 @@ const Navbar = () => {
                       {userNotifications.map(n => (
                         <div
                           key={n.id}
-                          onClick={() => handleMarkUserRead(n.id)}
+                          onClick={() => {
+                            handleMarkUserRead(n.id);
+                            setIsNotifDropdownOpen(false);
+                            if (n.type === 'order' && n.reference_id) {
+                              navigate(`/order/${n.reference_id}`);
+                            } else if (n.reference_id) {
+                              navigate(`/order/${n.reference_id}`);
+                            }
+                          }}
                           className={`notification-item ${n.is_read ? '' : 'unread'}`}
+                          style={{ cursor: 'pointer' }}
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <span className="notification-item-title">{n.title}</span>
                             {!n.is_read && <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#2bb6a8', marginTop: '4px' }} />}
                           </div>
                           <span className="notification-item-desc">{n.description}</span>
-                          <span className="notification-item-time">{new Date(n.created_at).toLocaleString()}</span>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+                            <span className="notification-item-time">{new Date(n.created_at).toLocaleString()}</span>
+                            {n.reference_id && (
+                              <span style={{ fontSize: '0.72rem', color: '#2bb6a8', fontWeight: '600' }}>
+                                View Details &rarr;
+                              </span>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>

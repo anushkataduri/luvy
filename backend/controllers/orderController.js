@@ -3,11 +3,7 @@
 const db = require('../config/db');
 
 const placeOrder = (req, res) => {
-
-  console.log(req.body);
-
   try {
-
     const {
       user_id,
       customer_name,
@@ -18,9 +14,16 @@ const placeOrder = (req, res) => {
       cartItems
     } = req.body;
 
+    if (!customer_name || !phone_number || !address || !total_amount) {
+      return res.status(400).json({ message: 'Missing required order details' });
+    }
+
+    const generatedLuvyOrderId = `LUVY-ORD-${Date.now().toString().slice(-6)}`;
+
     const orderQuery = `
       INSERT INTO orders
       (
+        luvy_order_id,
         user_id,
         customer_name,
         phone_number,
@@ -29,33 +32,31 @@ const placeOrder = (req, res) => {
         payment_method,
         order_status
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     db.query(
       orderQuery,
       [
+        generatedLuvyOrderId,
         user_id || null,
         customer_name,
         phone_number,
         address,
         total_amount,
-        payment_method,
+        payment_method || 'Online',
         'Pending'
       ],
       (err, orderResult) => {
-
         if (err) {
-          console.log('ORDER ERROR:', err);
-          return res.status(500).json(err);
+          console.error('ORDER ERROR:', err);
+          return res.status(500).json({ message: 'Failed to place order', error: err });
         }
 
         const orderId = orderResult.insertId;
 
         if (cartItems && cartItems.length > 0) {
-
           cartItems.forEach((item) => {
-
             const itemQuery = `
               INSERT INTO order_items
               (
@@ -69,27 +70,37 @@ const placeOrder = (req, res) => {
               VALUES (?, ?, ?, ?, ?, ?)
             `;
 
+            const imageVal = typeof item.image === 'object' ? JSON.stringify(item.image) : (item.image || null);
+
             db.query(
               itemQuery,
               [
                 orderId,
-                item.id,
-                item.product_name,
-                item.price,
-                item.quantity,
-                item.image
+                item.id || item.product_id || null,
+                item.product_name || item.name || 'Product',
+                item.price || 0,
+                item.quantity || 1,
+                imageVal
               ],
               (itemErr) => {
-
                 if (itemErr) {
-                  console.log(
-                    'ORDER ITEM ERROR:',
-                    itemErr
-                  );
+                  console.error('ORDER ITEM INSERT ERROR:', itemErr);
                 }
               }
             );
 
+            // Deduct product stock
+            if (item.id || item.product_id) {
+              const productId = item.id || item.product_id;
+              const qty = item.quantity || 1;
+              db.query(
+                'UPDATE products SET stock = GREATEST(0, stock - ?) WHERE id = ?',
+                [qty, productId],
+                (stockErr) => {
+                  if (stockErr) console.error('STOCK DEDUCTION ERROR:', stockErr);
+                }
+              );
+            }
           });
         }
 
@@ -97,7 +108,7 @@ const placeOrder = (req, res) => {
           const { createAndBroadcastNotification } = require('../services/notificationService');
           createAndBroadcastNotification(
             'New Order Received',
-            `Order #${orderId} placed by ${customer_name}`,
+            `Order #${generatedLuvyOrderId} placed by ${customer_name}`,
             'order',
             orderId
           );
@@ -107,15 +118,13 @@ const placeOrder = (req, res) => {
 
         return res.status(201).json({
           message: 'Order placed successfully',
-          orderId
+          orderId,
+          luvy_order_id: generatedLuvyOrderId
         });
       }
     );
-
   } catch (error) {
-
-    console.log(error);
-
+    console.error('PLACE ORDER CATCH ERROR:', error);
     return res.status(500).json({
       message: 'Server Error',
       error
@@ -124,7 +133,6 @@ const placeOrder = (req, res) => {
 };
 
 const getOrders = (req, res) => {
-
   const query = `
     SELECT *
     FROM orders
@@ -132,19 +140,15 @@ const getOrders = (req, res) => {
   `;
 
   db.query(query, (err, result) => {
-
     if (err) {
-      console.log('GET ORDERS ERROR:', err);
-
+      console.error('GET ORDERS ERROR:', err);
       return res.status(500).json(err);
     }
-
     return res.status(200).json(result);
   });
 };
 
 const getUserOrders = (req, res) => {
-
   const userId = req.params.id;
 
   const query = `
@@ -155,24 +159,21 @@ const getUserOrders = (req, res) => {
   `;
 
   db.query(query, [userId], (err, result) => {
-
     if (err) {
       return res.status(500).json(err);
     }
-
     return res.status(200).json(result);
   });
 };
 
-
-
 const getOrderDetails = (req, res) => {
-
   const orderId = req.params.id;
 
   const query = `
     SELECT
       o.id AS order_id,
+      o.luvy_order_id,
+      o.user_id,
       o.customer_name,
       o.phone_number,
       o.address,
@@ -188,6 +189,7 @@ const getOrderDetails = (req, res) => {
       oi.quantity,
       oi.product_image,
 
+      p.luvy_product_id,
       p.description,
       p.category,
       p.product_type
@@ -200,72 +202,50 @@ const getOrderDetails = (req, res) => {
     LEFT JOIN products p
       ON oi.product_id = p.id
 
-    WHERE o.id = ?
+    WHERE o.id = ? OR o.luvy_order_id = ?
   `;
 
-  db.query(
-    query,
-    [orderId],
-    (err, result) => {
-
-      if (err) {
-
-        console.log(
-          'GET ORDER DETAILS ERROR:',
-          err
-        );
-
-        return res.status(500).json(err);
-      }
-
-      return res.status(200).json(result);
+  db.query(query, [orderId, orderId], (err, result) => {
+    if (err) {
+      console.error('GET ORDER DETAILS ERROR:', err);
+      return res.status(500).json(err);
     }
-  );
+    return res.status(200).json(result);
+  });
 };
 
-
 const getRecentOrders = (req, res) => {
-
   const query = `
     SELECT
       o.id,
+      o.luvy_order_id,
       o.customer_name,
       o.total_amount,
       o.order_status,
       oi.product_name
-
     FROM orders o
-
     LEFT JOIN order_items oi
       ON o.id = oi.order_id
-
     ORDER BY o.created_at DESC
-
     LIMIT 6
   `;
 
   db.query(query, (err, result) => {
-
     if (err) {
-      console.log(err);
+      console.error('GET RECENT ORDERS ERROR:', err);
       return res.status(500).json(err);
     }
-
     return res.status(200).json(result);
   });
-
 };
 
-
 const deleteOrder = (req, res) => {
-
   const orderId = req.params.id;
 
   db.query(
     "DELETE FROM order_items WHERE order_id = ?",
     [orderId],
     (err) => {
-
       if (err) {
         return res.status(500).json(err);
       }
@@ -274,7 +254,6 @@ const deleteOrder = (req, res) => {
         "DELETE FROM orders WHERE id = ?",
         [orderId],
         (err2) => {
-
           if (err2) {
             return res.status(500).json(err2);
           }
@@ -288,18 +267,15 @@ const deleteOrder = (req, res) => {
   );
 };
 
-
-
 const updateOrderStatus = (req, res) => {
   const orderId = req.params.id;
   const { status } = req.body;
 
-  if (!status || !['Accepted', 'Rejected'].includes(status)) {
-    return res.status(400).json({ message: 'Invalid status. Status must be Accepted or Rejected.' });
+  if (!status || !['Accepted', 'Rejected', 'Pending', 'Delivered', 'Processing'].includes(status)) {
+    return res.status(400).json({ message: 'Invalid status value.' });
   }
 
-  // 1. Fetch order user_id and customer name
-  const getOrderQuery = 'SELECT user_id, customer_name FROM orders WHERE id = ?';
+  const getOrderQuery = 'SELECT id, luvy_order_id, user_id, customer_name FROM orders WHERE id = ?';
   db.query(getOrderQuery, [orderId], (err, orderResults) => {
     if (err) {
       console.error('Error fetching order:', err);
@@ -311,8 +287,8 @@ const updateOrderStatus = (req, res) => {
 
     const order = orderResults[0];
     const userId = order.user_id;
+    const luvyOrderId = order.luvy_order_id || `#${orderId}`;
 
-    // 2. Update order status
     const updateQuery = 'UPDATE orders SET order_status = ? WHERE id = ?';
     db.query(updateQuery, [status, orderId], (updateErr) => {
       if (updateErr) {
@@ -320,16 +296,18 @@ const updateOrderStatus = (req, res) => {
         return res.status(500).json({ error: 'Database Error' });
       }
 
-      // 3. Create user notification if user_id exists
       if (userId) {
         let title = '';
         let description = '';
         if (status === 'Accepted') {
           title = 'Order Accepted';
-          description = `Your order #${orderId} has been accepted and is being processed.`;
+          description = `Your order ${luvyOrderId} has been accepted and is being processed.`;
         } else if (status === 'Rejected') {
           title = 'Order Rejected';
-          description = `Unfortunately your order #${orderId} was rejected. Please contact support for more information.`;
+          description = `Unfortunately your order ${luvyOrderId} was rejected. Please contact support.`;
+        } else {
+          title = `Order Status: ${status}`;
+          description = `Your order ${luvyOrderId} is now ${status}.`;
         }
 
         try {
